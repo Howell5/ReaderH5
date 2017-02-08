@@ -218,10 +218,10 @@
 				</div>
 				<div class="child-mod">
 					<span>背景</span>
-					<ul>
-						<li class="bk-container">
+					<ul id="bk-container-ul">
+						<li class="bk-container" style="background-color: red">
 							<div class="bk-container-current" style="display: none">
-							</div>
+							</div> 
 						</li>
 						<li class="bk-container">
 							<div class="bk-container-current" style="display: none">
@@ -317,13 +317,14 @@
 				var initFontSize = currentFont ? currentFont : 14;
 				RootContainer.css('font-size',initFontSize);
 				var DOM = {
-					top_nav: $('#top-nav'),
+	 				top_nav: $('#top-nav'),
 					bottom_nav: $('#bottom-nav'),
 					font_container: $('#font-container'),
 					font_button: $('#font-button')
 				}
 
 				var bgcolorArr = ['#f7eee5','#e9dfc7','#a4a4a4','#cdefce','#283548','#0f1410'];
+				
 				function main () {
 					EventHandle();
 

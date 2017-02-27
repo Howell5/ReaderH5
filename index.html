@@ -398,10 +398,10 @@
 				function ReaderModel () {
 					//todo 实现与阅读器相关的数据交互的方法
 					var Chapter_id;
-					var init = function (UIcallback) {
+					var chapterTotal;					var init = function (UIcallback) {
 						getFictionInfo(function () {
 							getCurChapterContent(Chapter_id, function (data) {
-								//TODO 获得最终content后的处理
+								//TODO 获得最终content后的处理	
 								UIcallback && UIcallback(data);
 							})
 						})
@@ -409,7 +409,12 @@
 					var getFictionInfo = function (callback) {
 						$.get('data/chapter.json', function (data) {
 							//TODO 取得章节数据后的回调函数
-							Chapter_id = data.chapters[0].chapter_id + 1;
+							Chapter_id = Util.StorageGetter('last_chapter_id');
+							if (Chapter_id == null) {
+								Chapter_id = data.chapters[0].chapter_id + 1;
+							}
+							chapterTotal = data.chapters.length;
+							console.log(chapterTotal);
 							callback && callback();
 						}, 'json');
 					};
@@ -424,17 +429,43 @@
 							
 						}, 'json');
 					};
-					var prevChapter = function () {
-						
+					var prevChapter = function (UIcallback) {
+						//上一章
+						Chapter_id = parseInt(Chapter_id,10);
+
+						if(Chapter_id === 1) {
+							return;
+						}
+						Chapter_id -= 1;
+						getCurChapterContent(Chapter_id, UIcallback);
+						Util.StorageSetter('last_chapter_id',Chapter_id);
 					}
-					
+					var nextChapter = function (UIcallback) {
+						//下一章
+						Chapter_id = parseInt(Chapter_id,10);
+
+						if(Chapter_id === chapterTotal) {
+							return;
+						}
+						Chapter_id += 1;
+
+						getCurChapterContent(Chapter_id, UIcallback);
+						Util.StorageSetter('last_chapter_id',Chapter_id);
+
+					}
+						
 					return {
-						init: init
+						init: init,
+						prevChapter: prevChapter,
+						nextChapter: nextChapter
 					};
 				}
 
 				function ReaderBaseFrame (container) {
 					//todo 渲染基本的UI结构
+					var gotoTop = function () {
+						window.scrollTo(0, 0);
+					}
 					var parseChapterdata = function (data) {
 
 						var jsonObj = JSON.parse(data);
@@ -442,11 +473,11 @@
 						for (var i = 0, len = jsonObj.p.length; i < len ; i++) {
 							html += '<p>' + jsonObj.p[i] + '</p>';
 						}
-						return html;
-						
+						container.html(html);
+						gotoTop();
 					}
 					return function (data) {
-						container.html(parseChapterdata(data));
+						parseChapterdata(data);
 					}
 				}
 
@@ -547,6 +578,19 @@
 						Util.StorageSetter('font_size',initFontSize);
 					});
 					
+					//切换章节
+					$('#prev-button').click(function () {
+						readerModel.prevChapter(function (data) {
+							readerBaseFrame(data);
+						})
+					});
+
+					$('#next-button').click(function () {
+						readerModel.nextChapter(function (data) {
+							readerBaseFrame(data);
+						})
+					});
+
 					Win.scroll(function () {
 						DOM.top_nav.hide();
 						DOM.bottom_nav.hide();

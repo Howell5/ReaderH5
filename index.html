@@ -278,6 +278,7 @@
 		<script src="js/jquery.jsonp.js"></script>
 
 		<script>
+			'use strict';
 			(function(){
 				var Util = (function () {
 					var prefix = 'html5_reader_';
@@ -398,14 +399,30 @@
 				function ReaderModel () {
 					//todo 实现与阅读器相关的数据交互的方法
 					var Chapter_id;
-					var chapterTotal;					var init = function (UIcallback) {
+					var chapterTotal;
+					var init = function (UIcallback) {
+						getFictionInfoPromise()
+						.then(function () {
+							return getCurChapterContentPromise()
+						})
+						.then(function (data) {
+							UIcallback && UIcallback(data)
+						})
+						.catch(
+							function(reason) {
+								console.log('promise'+ reason);	
+							}
+						)
+					};					
+					/*var init = function (UIcallback) {
 						getFictionInfo(function () {
 							getCurChapterContent(Chapter_id, function (data) {
 								//TODO 获得最终content后的处理	
 								UIcallback && UIcallback(data);
 							})
 						})
-					};
+					};*/
+
 					var getFictionInfo = function (callback) {
 						$.get('data/chapter.json', function (data) {
 							//TODO 取得章节数据后的回调函数
@@ -414,10 +431,29 @@
 								Chapter_id = data.chapters[0].chapter_id + 1;
 							}
 							chapterTotal = data.chapters.length;
-							console.log(chapterTotal);
 							callback && callback();
 						}, 'json');
 					};
+					// 使用 promise 函数防止回调过多  getFictionInfoPromise
+					var getFictionInfoPromise = function () {
+						return new Promise (function(resolve, reject) {
+							$.get('data/chapter.json', function (data) {
+							//TODO 取得章节数据后的回调函数
+								if (data.result === 0) {
+									Chapter_id = Util.StorageGetter('last_chapter_id');
+									if (Chapter_id == null) {
+										Chapter_id = data.chapters[0].chapter_id + 1;
+									}
+									chapterTotal = data.chapters.length;
+									resolve(Chapter_id);
+								} else {
+									reject();
+								}
+							}, 'json');
+							
+						}); 
+					} 
+					
 					var getCurChapterContent = function (chapter_id, callback) {
 						$.get('data/data'+ chapter_id +'.json', function (data) {
 							if (data.result === 0) { //获取成功
@@ -425,10 +461,25 @@
 								Util.getBSONP(url, function(data) {
 									callback && callback(data);
 								})
+							} else {
+								reject();
 							}
 							
 						}, 'json');
 					};
+					var getCurChapterContentPromise = function () {
+						return new Promise(function (resolve, reject) {
+							$.get('data/data'+ Chapter_id +'.json', function (data) {
+								if (data.result === 0) { //获取成功
+									var url =  data.jsonp;
+									Util.getBSONP(url, function(data) {
+										resolve(data);
+									})
+								}
+							
+							}, 'json');
+						});
+					}
 					var prevChapter = function (UIcallback) {
 						//上一章
 						Chapter_id = parseInt(Chapter_id,10);
